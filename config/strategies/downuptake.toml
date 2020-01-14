@@ -1,0 +1,7 @@
+weight = 21
+starting_trend = 'neutral'
+entry_price = 0
+
+[thresholds]
+gain = 0.1
+MAdiff = 200
