@@ -1,7 +1,11 @@
 var _ = require('lodash');
 var log = require('../core/log.js');
 
-var myprice;
+var entry_price;
+var max_patience;
+var patience;
+var required_gain;
+var dismiss_gain;
 
 var method = {};
 
@@ -11,8 +15,12 @@ method.init = function() {
 
 	this.currentTrend = this.settings.starting_trend;
 	// the following is considered only if starting trend is set to UP
-	myprice = this.settings.entry_price;
+	entry_price = this.settings.entry_price;
 
+	max_patience = this.settings.max_patience;
+	dismiss_gain = this.settings.dismiss_gain;
+	patience = max_patience;
+	required_gain = this.settings.thresholds.gain;
 	this.requiredHistory = this.tradingAdvisor.historySize;
 
 	// define the indicators we need to determine UP and DOWN
@@ -36,38 +44,84 @@ method.check = function(candle) {
 	let resSMA = sma.result;
 	let price = candle.close;
 	let diff = resSMA - resDEMA;
-	let required_diff = this.settings.thresholds.MAdiff;
+	let required_diff = (this.settings.thresholds.MAdiff)*price;
+	//let required_diff = 200;
 
 	//console.log(candle.start.format());
 
 	// When neutral, wait for a downtrend
 	// If downtrend is detected, set DOWN status and wait UP for buying chances
 	if (this.currentTrend=='neutral') {
+		// set trend down
 		if(resSMA < resDEMA - required_diff) {
+			console.log('##');
+			console.log(candle.start.format(),'SMA:',resSMA,' resDMA:',resDEMA,' required_diff:', required_diff);
 			console.log(candle.start.format(),'->[price:',price,'] Bears detected-> setting DOWN and waiting for bulls...');
 			this.currentTrend = 'down';
+		}
+		// tred up, buy
+		if(resSMA > resDEMA + required_diff) {
+			console.log('##');
+			console.log(candle.start.format(),'SMA:',resSMA,' resDMA:',resDEMA,' required_diff:', required_diff);
+			console.log(candle.start.format(),'->[price:',price,'] Bulls detected-> BUYing and going HODL and waiting for gain...');
+			this.currentTrend = 'up';
+			this.advice('long');
+			entry_price = price;
+			patience = max_patience;
 		}
 	}
 	// when down, uptrend detection enables a buy & hodl position
 	if(this.currentTrend == 'down') {
-		//console.log('resSMA', resSMA.toFixed(5), ' resDEMA:', resDEMA.toFixed(5) + ' diff: ' + diff.toFixed(5), ' required diff: ', required_diff);
 		if(resSMA > resDEMA + required_diff) {
+			console.log('##');
+			console.log(candle.start.format(),'SMA:',resSMA,' resDMA:',resDEMA,' required_diff:', required_diff);
 			console.log(candle.start.format(),'->[price:',price,'] Bulls detected-> BUYing and going HODL and waiting for gain...');
 			this.currentTrend = 'up';
 			this.advice('long');
-			myprice = price;
+			entry_price = price;
+			patience = max_patience;
 		}
 	} 
 
 	// when hodling, go short and sell if target gain reached
 	if (this.currentTrend=='up') {
-		let price_diff = price-myprice;
-		let gain = price_diff/myprice;
+		let price_diff = price-entry_price;
+		let gain = price_diff/entry_price;
 
-		if (gain>= this.settings.thresholds.gain) {
-			console.log(candle.start.format(),'# Gain detected -> Going neutral, Selling at price: ',price, ', myprice: ', myprice, 'gain -> ', price_diff);
+		patience = patience -1;
+
+		// 1) Sell because of reached gain
+		if (gain>= required_gain) {
+			console.log('##');
+			console.log(candle.start.format(),'# GAIN TARGET detected! -> Going neutral, Selling at price: ',price, ', myprice: ', entry_price, 'gain -> ', price_diff);
 			this.currentTrend = 'neutral';
 			this.advice('short');
+		}
+		//else if (patience%240==0) console.log(candle.start.format(),'Current Gain: ',gain,', Still Waiting for ',required_gain,', patience remaining ',patience, ' candles...');
+
+		// 2) Sell because of end of patience
+		else if (patience==0)  {
+			if (gain >= dismiss_gain) {
+				console.log('##');
+				console.log(candle.start.format(),'Lost Patience! Selling at ',price,' --> theoric gain: ',gain);
+				this.advice('short');
+				this.currentTrend = 'neutral';
+			}
+			else {
+				//console.log(candle.start.format(),'Lost Patience! But not enough gain, delaying of 24 candles --> theoric gain %: ',gain);
+				patience = 1;
+			}
+		} 
+		
+		// 3) Sell because of trend change
+		else if (resSMA < resDEMA - required_diff) {
+			if (gain >= dismiss_gain) {
+				console.log('##');
+				console.log(candle.start.format(),'SMA:',resSMA,' resDMA:',resDEMA);
+				console.log(candle.start.format(),'#### Trend change! Selling at ',price,' --> theoric gain: ',gain);
+				this.currentTrend = 'down';
+				this.advice('short');
+			}
 		}
 	}
 }
