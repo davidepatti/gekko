@@ -42,7 +42,8 @@ method.init = function() {
 	this.addIndicator('sma', 'SMA', this.settings.weight);
 
 
-	report_step = 6;
+	// in candles...
+	report_step = 1;
 
 	console.log('Initializing RobinHodl....');
 }
@@ -64,33 +65,32 @@ method.check = function(candle) {
 	let diff = resSMA - resDEMA;
 	let required_diff = (this.settings.thresholds.MAdiff)*price;
 
+	report_step = report_step-1;
 
-	var mess = 'LOG:'+candle.start.format()+ 'CurrentStatus:' + this.currentTrend + 'SMA:' + resSMA +' resDMA:' + resDEMA + ' required_diff:'+ required_diff;
+	var message;
+	if (report_step==0) {
+		message = 'LOG:'+candle.start.format()+'[Price:'+ price.toFixed(2)+ '] [CurrentStatus:' + this.currentTrend + '] [SMA:' + resSMA.toFixed(2) +' DMA:' + resDEMA.toFixed(2) + '] [required_diff:'+ required_diff.toFixed(2)+']';
+		console.log(message); 
+		report_step = 1;
+	}
 
-        console.log(mess); 
-
-	// When neutral, wait for a downtrend
-	// If downtrend is detected, set DOWN status and wait UP for buying chances
 	if (this.currentTrend=='neutral') {
-		let message = 'LOG'+ candle.start.format()+ ': currentTrend:' + this.currentTrend + 'SMA:' + resSMA +' resDMA:' + resDEMA + ' required_diff:' + required_diff;
-		console.log(message);
 		// set trend down
 		if(resSMA < resDEMA - required_diff) {
 			console.log('##');
-			console.log('Setting DOWN from NEUTRAL');
-			/*
-			console.log(candle.start.format(),'SMA:',resSMA,' resDMA:',resDEMA,' required_diff:', required_diff);
-			console.log(candle.start.format(),'->[price:',price,'] Bears detected-> setting DOWN and waiting for bulls...');
-			*/
+			message = 'LOG:'+candle.start.format()+'[Price:'+ price.toFixed(2)+ '] [CurrentStatus:' + this.currentTrend + '] [SMA:' + resSMA.toFixed(2) +' DMA:' + resDEMA.toFixed(2) + '] [required_diff:'+ required_diff.toFixed(2)+']';
+			console.log(message); 
+			message = 'LOG:'+candle.start.format()+'-> Bears detected-> setting DOWN and waiting for bulls...';
+			console.log(message);
 			this.currentTrend = 'down';
 		}
 		// tred up, buy
 		if(resSMA > resDEMA + required_diff) {
 			console.log('##');
-			console.log('Setting UP and BUY from NEUTRAL');
-			/*
-			console.log(candle.start.format(),'->[price:',price,'] Bulls detected-> BUYing and going HODL and waiting for gain...');
-			*/
+			message = 'LOG:'+candle.start.format()+'[Price:'+price.toFixed(2)+ '] [CurrentStatus:' + this.currentTrend + '] [SMA:' + resSMA.toFixed(2) +' DMA:' + resDEMA.toFixed(2) + '] [required_diff:'+ required_diff.toFixed(2)+']';
+			console.log(message); 
+			message = 'LOG:'+candle.start.format()+'->Bulls detected-> BUYing, going HODL and waiting for gain...';
+			console.log(message);
 			this.currentTrend = 'up';
 			this.advice('long');
 			entry_price = price;
@@ -99,19 +99,13 @@ method.check = function(candle) {
 	}
 	// when down, uptrend detection enables a buy & hodl position
 	if(this.currentTrend == 'down') {
-			console.log('##');
-			console.log('CurrentTrend: DOWN');
-		/*
-		console.log(candle.start.format(),' currentTrend:',this.currentTrend,'SMA:',resSMA,' resDMA:',resDEMA,' required_diff:', required_diff);
-		*/
 		if(resSMA > resDEMA + required_diff) {
 			console.log('##');
-			console.log('Setting UP and BUY from DOWN');
+			message = 'LOG:'+candle.start.format()+'[Price:' + price.toFixed(2) + '] [CurrentStatus:' + this.currentTrend + '] [SMA:' + resSMA.toFixed(2) +' DMA:' + resDEMA.toFixed(2) + '] [required_diff:'+ required_diff.toFixed(2)+']';
+			console.log(message); 
+			message = 'LOG:'+candle.start.format()+'->Bulls detected-> BUYing, going HODL and waiting for gain...';
+			console.log(message);
 
-			/*
-			console.log(candle.start.format(),'SMA:',resSMA,' resDMA:',resDEMA,' required_diff:', required_diff);
-			console.log(candle.start.format(),'->[price:',price,'] Bulls detected-> BUYing and going HODL and waiting for gain...');
-			*/
 			this.currentTrend = 'up';
 			this.advice('long');
 			entry_price = price;
@@ -119,13 +113,8 @@ method.check = function(candle) {
 		}
 	} 
 
-	// when hodling, go short and sell if target gain reached
 	if (this.currentTrend=='up') {
 		
-		/*
-		console.log(candle.start.format(),' currentTrend:',this.currentTrend,'SMA:',resSMA,' resDMA:',resDEMA,' required_diff:', required_diff);
-		*/
-		console.log('CurrentTrend: UP');
 		let price_diff = price-entry_price;
 		let gain = price_diff/entry_price;
 
@@ -134,8 +123,8 @@ method.check = function(candle) {
 		// 1) Sell because of reached gain
 		if (gain>= required_gain) {
 			console.log('##');
-			console.log('GAIN, going NEUTRAL');
-			//console.log(candle.start.format(),'# GAIN TARGET detected! -> Going neutral, Selling at price: ',price, ', myprice: ', entry_price, 'gain -> ', price_diff);
+			message = 'LOG:'+candle.start.format()+' # GAIN TARGET detected! -> Going neutral, Selling at price: ' + price.toFixed(2) +  ', myprice: ' + entry_price.toFixed(2) + ' -> GAIN: ' + price_diff.toFixed(2);
+                        console.log(message);
 			this.currentTrend = 'neutral';
 			this.advice('short');
 		}
@@ -143,11 +132,10 @@ method.check = function(candle) {
 
 		// 2) Sell because of end of patience
 		else if (patience==0)  {
-			console.log('end of PATIENCE');
 			if (gain >= dismiss_gain) {
 				console.log('##');
-				console.log('selling because of PATIENCE');
-				//console.log(candle.start.format(),'Lost Patience! Selling at ',price,' --> theoric gain: ',gain);
+				message = 'LOG:'+candle.start.format()+' Lost Patience! Selling at ' + price.toFixed(2) + ' --> theoric gain: '+gain.toFixed(2);
+				console.log(message);
 				this.advice('short');
 				this.currentTrend = 'neutral';
 			}
@@ -161,9 +149,8 @@ method.check = function(candle) {
 		else if (resSMA < resDEMA - required_diff) {
 			if (gain >= dismiss_gain) {
 				console.log('##');
-				console.log('Trend change: SELLING and going DOWN');
-				//console.log(candle.start.format(),'SMA:',resSMA,' resDMA:',resDEMA,' required_diff:', required_diff);
-				//console.log(candle.start.format(),'#### Trend change! Selling at ',price,' --> theoric gain: ',gain);
+				message = 'LOG:'+candle.start.format()+ '#### Trend change! Selling at '+price.toFixed(2)+' --> theoric gain: '+gain.toFixed(2);
+				console.log(message);
 				this.currentTrend = 'down';
 				this.advice('short');
 			}
