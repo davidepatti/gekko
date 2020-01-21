@@ -7,4 +7,5 @@ log_step = 1
 
 [thresholds]
 gain = 0.2
-MAdiff = 0.025
+MAdiffUP = 0.025
+MAdiffDOWN = 0.025

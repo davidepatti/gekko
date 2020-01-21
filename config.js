@@ -28,7 +28,7 @@ config.watch = {
 config.tradingAdvisor = {
   enabled: true,
   method: 'downuptake',
-  candleSize: 60,
+  candleSize: 10,
   historySize: 10,
 }
 
@@ -36,10 +36,12 @@ config.downuptake = {
 	weight: 21,
 	starting_trend: 'neutral',
 	entry_price: 0,
+	dismiss_gain: -0.05,
+	max_patience: 480,
 
 	thresholds: {
-		gain: 0.1,
-		MAdiff: 100
+		gain: 0.2,
+		MAdiff: 0.025
 	}
 }
 

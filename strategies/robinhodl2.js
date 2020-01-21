@@ -64,23 +64,24 @@ method.check = function(candle) {
 	let resSMA = sma.result;
 	let price = candle.close;
 	let diff = resSMA - resDEMA;
-	let required_diff = (this.settings.thresholds.MAdiff)*price;
+	let required_diff_up = (this.settings.thresholds.MAdiffUP)*price;
+	let required_diff_down = (this.settings.thresholds.MAdiffDOWN)*price;
 
 	report_step = report_step-1;
 
 	var message;
 	if (report_step==0) {
-		message = 'LOG:'+candle.start.format()+'[Price:'+ price.toFixed(2)+ '] [Status:' + this.currentTrend + '] [SMA:' + resSMA.toFixed(2) +' DMA:' + resDEMA.toFixed(2) + '] [diff (current/required):'+ diff.toFixed(2)+ '/' + required_diff.toFixed(2)+']';
+		message = 'LOG:'+candle.start.format()+'[Price:'+ price.toFixed(2)+ '] [Status:' + this.currentTrend + '] [SMA:' + resSMA.toFixed(2) +' DMA:' + resDEMA.toFixed(2) + '] [diff (current/required UP/DOWN):'+ diff.toFixed(2)+ '/ ' + required_diff_up.toFixed(2)+' / '+required_diff_down.toFixed(2)+']';
 		console.log(message); 
-		report_step = this.settings.report_step;
+		report_step = this.settings.log_step;
 	}
 
 	if (this.currentTrend=='neutral') {
 		// set trend down
-		if(resSMA < resDEMA - required_diff) {
+		if(resSMA < resDEMA - required_diff_down) {
 			console.log('##');
 
-			message = 'LOG:'+candle.start.format()+'[Price:'+ price.toFixed(2)+ '] [Status:' + this.currentTrend + '] [SMA:' + resSMA.toFixed(2) +' DMA:' + resDEMA.toFixed(2) + '] [diff (current/required):'+ diff.toFixed(2)+ '/' + required_diff.toFixed(2)+']';
+			message = 'LOG:'+candle.start.format()+'[Price:'+ price.toFixed(2)+ '] [Status:' + this.currentTrend + '] [SMA:' + resSMA.toFixed(2) +' DMA:' + resDEMA.toFixed(2) + '] [diff (current/required):'+ diff.toFixed(2)+ '/' + required_diff_down.toFixed(2)+']';
 			console.log(message); 
 		
 			message = 'LOG:'+candle.start.format()+'-> Bears detected-> setting DOWN and waiting for bulls...';
@@ -88,10 +89,10 @@ method.check = function(candle) {
 			this.currentTrend = 'down';
 		}
 		// tred up, buy
-		if(resSMA > resDEMA + required_diff) {
+		if(resSMA > resDEMA + required_diff_up) {
 			console.log('##');
 
-			message = 'LOG:'+candle.start.format()+'[Price:'+ price.toFixed(2)+ '] [Status:' + this.currentTrend + '] [SMA:' + resSMA.toFixed(2) +' DMA:' + resDEMA.toFixed(2) + '] [diff (current/required):'+ diff.toFixed(2)+ '/' + required_diff.toFixed(2)+']';
+			message = 'LOG:'+candle.start.format()+'[Price:'+ price.toFixed(2)+ '] [Status:' + this.currentTrend + '] [SMA:' + resSMA.toFixed(2) +' DMA:' + resDEMA.toFixed(2) + '] [diff (current/required):'+ diff.toFixed(2)+ '/' + required_diff_up.toFixed(2)+']';
 			console.log(message); 
 		
 			message = 'LOG:'+candle.start.format()+'->Bulls detected-> BUYing, going HODL and waiting for gain...';
@@ -104,10 +105,10 @@ method.check = function(candle) {
 	}
 	// when down, uptrend detection enables a buy & hodl position
 	if(this.currentTrend == 'down') {
-		if(resSMA > resDEMA + required_diff) {
+		if(resSMA > resDEMA + required_diff_up) {
 			console.log('##');
 
-			message = 'LOG:'+candle.start.format()+'[Price:'+ price.toFixed(2)+ '] [Status:' + this.currentTrend + '] [SMA:' + resSMA.toFixed(2) +' DMA:' + resDEMA.toFixed(2) + '] [diff (current/required):'+ diff.toFixed(2)+ '/' + required_diff.toFixed(2)+']';
+			message = 'LOG:'+candle.start.format()+'[Price:'+ price.toFixed(2)+ '] [Status:' + this.currentTrend + '] [SMA:' + resSMA.toFixed(2) +' DMA:' + resDEMA.toFixed(2) + '] [diff (current/required):'+ diff.toFixed(2)+ '/'  + required_diff_up.toFixed(2)+']';
 			console.log(message); 
 		
 			message = 'LOG:'+candle.start.format()+'->Bulls detected-> BUYing, going HODL and waiting for gain...';
@@ -153,7 +154,7 @@ method.check = function(candle) {
 		} 
 		
 		// 3) Sell because of trend change
-		else if (resSMA < resDEMA - required_diff) {
+		else if (resSMA < resDEMA - required_diff_down) {
 			if (gain >= dismiss_gain) {
 				console.log('##');
 				message = 'LOG:'+candle.start.format()+ '#### Trend change! Selling at '+price.toFixed(2)+' --> theoric gain: '+gain.toFixed(2)+ ' --> value: '+(price-entry_price).toFixed(2);
