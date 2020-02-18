@@ -1,11 +1,9 @@
 weight = 21
 starting_trend = 'neutral'
-entry_price = 0
+entry_price = 9800
 dismiss_gain = -0.05
 max_patience = 480
 log_step = 1
-
-[thresholds]
-gain = 0.2
-MAdiffUP = 0.025
-MAdiffDOWN = 0.025
+target_gain = 0.2
+MAdiffUP = 0.005
+MAdiffDOWN = 0.02
