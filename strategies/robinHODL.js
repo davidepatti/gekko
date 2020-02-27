@@ -74,12 +74,19 @@ method.check = function(candle) {
 	let diff = resSMA - resDEMA;
 	let req_diff_up = (this.settings.MAdiffUP)*price;
 	let req_diff_down = (this.settings.MAdiffDOWN)*price;
+	let price_diff = price-entry_price;
+	let gain = price_diff/entry_price;
 
 	report_step = report_step-1;
 
 	var message;
 	if (report_step==0) {
+		if (this.currentTrend=='neutral') {
 		message = 'LOG:'+candle.start.format('YY-MM-DD HH:mm')+' [Price:'+ price.toFixed(2)+ '] [' + this.currentTrend + '] [SMA:' + resSMA.toFixed(2) +' DMA:' + resDEMA.toFixed(2) + '] [diff (curr/req UP-DOWN):'+ diff.toFixed(2)+ '/ ' + req_diff_up.toFixed(2)+'-'+req_diff_down.toFixed(2)+']';
+		}
+		else {
+		message = 'LOG:'+candle.start.format('YY-MM-DD HH:mm')+' [Price:'+ price.toFixed(2)+ '] [' + this.currentTrend + '] [entry:'+entry_price+' gain:'+gain.toFixed(2)+'] [diff (curr/req UP-DOWN):'+ diff.toFixed(2)+ '/ ' + req_diff_up.toFixed(2)+'-'+req_diff_down.toFixed(2)+']';
+		}
 		console.log(message); 
 		report_step = this.settings.log_step;
 	}
@@ -129,8 +136,8 @@ method.check = function(candle) {
 
 	if (this.currentTrend=='up') {
 		
-		let price_diff = price-entry_price;
-		let gain = price_diff/entry_price;
+		price_diff = price-entry_price;
+		gain = price_diff/entry_price;
 
 		patience = patience -1;
 
