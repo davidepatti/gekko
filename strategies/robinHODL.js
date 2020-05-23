@@ -26,16 +26,19 @@ method.init = function() {
 	this.name = 'robinHODL';
 
 	this.currentTrend = this.settings.starting_trend;
-	// the following will be considered only if starting trend is set to UP
-	
-	if (this.currentTrend!='neutral')
-		entry_price = this.settings.entry_price;
-
 	max_patience = this.settings.max_patience;
 	patience = max_patience;
 	dismiss_gain = this.settings.dismiss_gain;
 	target_gain = this.settings.target_gain;
 	this.requiredHistory = this.tradingAdvisor.historySize;
+
+	// the following will be considered only if manually setting starting trend
+	if (this.currentTrend=='up') {
+		patience = 132;
+		entry_price = this.settings.entry_price;
+		this.advice('long');
+	}
+
 
 	// define the indicators we need to determine UP and DOWN
 	// https://www.investopedia.com/terms/d/double-exponential-moving-average.asp
@@ -53,6 +56,7 @@ method.init = function() {
 		console.log('entry price: '+this.settings.entry_price);
 	}
 	console.log('max patience: '+this.settings.max_patience);
+	console.log('current patience: '+patience);
 	console.log('dismiss_gain: '+this.settings.dismiss_gain);
 	console.log('target_gain: '+this.settings.target_gain);
 }
@@ -82,10 +86,10 @@ method.check = function(candle) {
 	var message;
 	if (report_step==0) {
 		if (this.currentTrend=='neutral') {
-		message = 'LOG:'+candle.start.format('YY-MM-DD HH:mm')+' [Price:'+ price.toFixed(2)+ '] [' + this.currentTrend + '] [SMA:' + resSMA.toFixed(2) +' DMA:' + resDEMA.toFixed(2) + '] [diff (curr/req UP-DOWN):'+ diff.toFixed(2)+ '/ ' + req_diff_up.toFixed(2)+'-'+req_diff_down.toFixed(2)+']';
+		message = 'LOG:'+candle.start.format('YY-MM-DD HH:mm')+' [Price:'+ price.toFixed(0)+ '] [' + this.currentTrend + '] [SMA:' + resSMA.toFixed(0) +' DMA:' + resDEMA.toFixed(0) + '] [diff (curr/req UP-DOWN):'+ diff.toFixed(0)+ '/ ' + req_diff_up.toFixed(0)+'-'+req_diff_down.toFixed(0)+']';
 		}
 		else {
-		message = 'LOG:'+candle.start.format('YY-MM-DD HH:mm')+' [Price:'+ price.toFixed(2)+ '] [' + this.currentTrend + '] [entry:'+entry_price+' gain:'+gain.toFixed(2)+'] [diff (curr/req UP-DOWN):'+ diff.toFixed(2)+ '/ ' + req_diff_up.toFixed(2)+'-'+req_diff_down.toFixed(2)+']';
+		message = 'LOG:'+candle.start.format('YY-MM-DD HH:mm')+' [Price:'+ price.toFixed(0)+ '] [' + this.currentTrend + '] [entry:'+entry_price+' gain:'+gain.toFixed(2)+' curr patience:'+patience+'] [diff (curr/req UP-DOWN):'+ diff.toFixed(0)+ '/ ' + req_diff_up.toFixed(0)+'-'+req_diff_down.toFixed(0)+']';
 		}
 		console.log(message); 
 		report_step = this.settings.log_step;
